@@ -1,4 +1,4 @@
-# SIGSE — Sistema Integrado de Identificação e Chamada Silenciosa
+# SICS — Sistema Integrado de Identificação e Chamada Silenciosa
 
 Back-end do TCC **TechFy**: controle de acesso escolar com RFID e chamada visual no pátio, sem microfone nem caixa de som.
 
@@ -11,7 +11,7 @@ O objetivo é organizar a saída do **1º ao 5º ano** de forma silenciosa. O re
                            │
                       HTTP (API)
                            ▼
-              [ Servidor SIGSE + MySQL ]
+              [ Servidor SICS + MySQL ]
                            │
                     WebSocket STOMP
                            ▼
@@ -84,12 +84,18 @@ No Windows:
 mvnw.cmd spring-boot:run
 ```
 
-4. A API fica em `http://localhost:8080`.
+4. A API fica na porta definida por `server.port` em `application.properties` (neste projeto: `http://localhost`).
 5. Teste os endpoints no Postman. Passo a passo em [docs/API.md](docs/API.md).
+
+## Documentacao interativa da API (Swagger)
+
+Com a aplicacao em execucao, acesse `http://localhost/swagger-ui/index.html` para explorar e testar os endpoints. A especificacao OpenAPI em JSON fica disponivel em `http://localhost/v3/api-docs`.
+
+Para abrir a documentacao a partir de outro computador na mesma rede, substitua `localhost` pelo IP do computador que executa o back-end (por exemplo, `http://192.168.1.50/swagger-ui/index.html`). A porta deve corresponder ao valor de `server.port` em `src/main/resources/application.properties`.
 
 ## WebSocket do pátio
 
-- Conexão: `ws://localhost:8080/ws` (STOMP; SockJS também está habilitado)
+- Conexão: `ws://localhost/ws` (STOMP; SockJS também está habilitado)
 - Tópico: `/topic/patio`
 - Eventos:
 

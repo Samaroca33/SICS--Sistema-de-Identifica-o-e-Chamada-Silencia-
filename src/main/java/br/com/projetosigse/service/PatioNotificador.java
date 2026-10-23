@@ -17,5 +17,6 @@ public class PatioNotificador {
 
     public void publicar(PatioEvento evento) {
         messagingTemplate.convertAndSend(TOPICO_PATIO, evento);
+        System.out.println("Evento publicado: " + evento);
     }
 }

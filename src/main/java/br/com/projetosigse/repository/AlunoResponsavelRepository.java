@@ -12,4 +12,8 @@ public interface AlunoResponsavelRepository extends JpaRepository<AlunoResponsav
     List<AlunoResponsavel> findByAlunoId(Long alunoId);
 
     boolean existsByAlunoIdAndResponsavelId(Long alunoId, Long responsavelId);
+
+    void deleteByAlunoId(Long alunoId);
+
+    void deleteByResponsavelId(Long responsavelId);
 }

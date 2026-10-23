@@ -12,4 +12,10 @@ public interface ChamadaPatioRepository extends JpaRepository<ChamadaPatio, Long
     List<ChamadaPatio> findByStatusOrderByCriadoEmAsc(StatusChamada status);
 
     Optional<ChamadaPatio> findFirstByAlunoIdAndStatus(Long alunoId, StatusChamada status);
+
+    List<ChamadaPatio> findByAlunoId(Long alunoId);
+
+    boolean existsByAlunoId(Long alunoId);
+
+    void deleteByAlunoId(Long alunoId);
 }

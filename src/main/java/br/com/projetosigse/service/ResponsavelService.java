@@ -9,6 +9,7 @@ import br.com.projetosigse.model.Aluno;
 import br.com.projetosigse.model.AlunoResponsavel;
 import br.com.projetosigse.model.Responsavel;
 import br.com.projetosigse.repository.AlunoResponsavelRepository;
+import br.com.projetosigse.repository.CartaoRfidRepository;
 import br.com.projetosigse.repository.ResponsavelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +21,18 @@ public class ResponsavelService {
 
     private final ResponsavelRepository responsavelRepository;
     private final AlunoResponsavelRepository alunoResponsavelRepository;
+    private final CartaoRfidRepository cartaoRfidRepository;
     private final AlunoService alunoService;
 
     public ResponsavelService(
             ResponsavelRepository responsavelRepository,
             AlunoResponsavelRepository alunoResponsavelRepository,
+            CartaoRfidRepository cartaoRfidRepository,
             AlunoService alunoService
     ) {
         this.responsavelRepository = responsavelRepository;
         this.alunoResponsavelRepository = alunoResponsavelRepository;
+        this.cartaoRfidRepository = cartaoRfidRepository;
         this.alunoService = alunoService;
     }
 
@@ -54,6 +58,14 @@ public class ResponsavelService {
         Responsavel responsavel = obter(id);
         aplicarAtualizacao(responsavel, request);
         return ResponsavelResponse.from(responsavelRepository.save(responsavel));
+    }
+
+    @Transactional
+    public void excluir(Long id) {
+        Responsavel responsavel = obter(id);
+        cartaoRfidRepository.deleteByResponsavelId(id);
+        alunoResponsavelRepository.deleteByResponsavelId(id);
+        responsavelRepository.delete(responsavel);
     }
 
     @Transactional

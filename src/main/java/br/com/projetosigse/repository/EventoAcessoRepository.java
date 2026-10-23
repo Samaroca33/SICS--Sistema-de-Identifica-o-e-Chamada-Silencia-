@@ -8,4 +8,8 @@ import java.util.List;
 public interface EventoAcessoRepository extends JpaRepository<EventoAcesso, Long> {
 
     List<EventoAcesso> findByAlunoIdOrderByHorarioDesc(Long alunoId);
+
+    boolean existsByAlunoId(Long alunoId);
+
+    void deleteByAlunoId(Long alunoId);
 }

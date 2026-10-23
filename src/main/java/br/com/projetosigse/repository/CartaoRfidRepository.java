@@ -8,4 +8,8 @@ import java.util.Optional;
 public interface CartaoRfidRepository extends JpaRepository<CartaoRfid, Long> {
 
     Optional<CartaoRfid> findByUidIgnoreCase(String uid);
+
+    void deleteByAlunoId(Long alunoId);
+
+    void deleteByResponsavelId(Long responsavelId);
 }

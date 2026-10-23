@@ -123,6 +123,9 @@ public class ChamadaService {
         } else {
             throw new RegraNegocioException("Informe alunoId ou matrícula.");
         }
+        if (!aluno.isAtivo()) {
+            throw new RegraNegocioException("Aluno inativo.");
+        }
         return chamar(aluno, null, OrigemChamada.MANUAL, TipoEvento.LIBERACAO_MANUAL, PontoLeitura.PORTARIA);
     }
 

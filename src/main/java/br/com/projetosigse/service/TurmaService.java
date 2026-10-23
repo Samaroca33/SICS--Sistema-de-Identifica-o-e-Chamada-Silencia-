@@ -44,6 +44,11 @@ public class TurmaService {
         return TurmaResponse.from(turmaRepository.save(turma));
     }
 
+    @Transactional
+    public void excluir(Long id) {
+        turmaRepository.delete(obter(id));
+    }
+
     public Turma obter(Long id) {
         return turmaRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Turma não encontrada: " + id));

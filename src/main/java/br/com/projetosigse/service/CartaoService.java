@@ -56,6 +56,11 @@ public class CartaoService {
         return CartaoResponse.from(cartaoRfidRepository.save(cartao));
     }
 
+    @Transactional
+    public void excluir(Long id) {
+        cartaoRfidRepository.delete(obter(id));
+    }
+
     public CartaoRfid obterPorUid(String uid) {
         return cartaoRfidRepository.findByUidIgnoreCase(uid.trim())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cartão RFID não encontrado: " + uid));

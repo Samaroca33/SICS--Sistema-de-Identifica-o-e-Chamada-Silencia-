@@ -1,10 +1,14 @@
 # API SIGSE — como acessar e testar no Postman
 
-Base URL: `http://localhost:8080`
+Base URL: `http://localhost` (a porta configurada atualmente é 80; confira `server.port` em `application.properties`).
 
 A aplicação precisa estar rodando e o MySQL ligado. No Postman, use **Body → raw → JSON** nas requisições POST/PUT.
 
-Nas atualizações (`PUT /api/{recurso}/{id}`), envie somente os campos que deseja alterar. Campos omitidos ou enviados como `null` permanecem inalterados. Para desativar aluno/cartão, envie `"ativo": false`.
+Nas atualizações (`PUT /api/{recurso}/{id}`), envie somente os campos que deseja alterar. Campos omitidos ou enviados como `null` permanecem inalterados. Para desativar aluno/cartão, envie `"ativo": false`. `GET /api/alunos` e `GET /api/alunos/{id}` retornam somente alunos ativos; use `GET /api/alunos/inativos` para consultar os inativos e `PATCH /api/alunos/{id}/ativar` para reativar um aluno.
+
+Para enviar ou trocar a foto, use `POST /api/alunos/{id}/foto` como `multipart/form-data`, com o campo `foto` contendo um arquivo JPEG ou PNG de até 5 MB. A resposta inclui `fotoUrl`; o arquivo fica disponível em `/uploads/fotos/...`.
+
+Para excluir cadastros, use `DELETE /api/turmas/{id}`, `DELETE /api/alunos/{id}`, `DELETE /api/responsaveis/{id}` ou `DELETE /api/cartoes/{id}`. Em caso de sucesso, a API retorna `204 No Content`. A exclusão de responsável também remove seus cartões e vínculos com alunos. Em alunos, `DELETE /api/alunos/{id}` apenas desativa o cadastro e preserva todos os dados relacionados; ele pode ser reativado pelo endpoint indicado acima. Para apagar o aluno e seus cartões, vínculos, chamadas e eventos de acesso permanentemente, use `DELETE /api/alunos/{id}/permanente`. Essa exclusão apaga o histórico e não pode ser desfeita.
 
 Não há login ainda: qualquer cliente na rede local pode chamar a API.
 

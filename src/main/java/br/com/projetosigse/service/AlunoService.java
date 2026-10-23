@@ -2,12 +2,21 @@ package br.com.projetosigse.service;
 
 import br.com.projetosigse.dto.AlunoDtos.AlunoRequest;
 import br.com.projetosigse.dto.AlunoDtos.AlunoResponse;
+import br.com.projetosigse.dto.ChamadaDtos.PatioEvento;
 import br.com.projetosigse.exception.RecursoNaoEncontradoException;
 import br.com.projetosigse.exception.RegraNegocioException;
 import br.com.projetosigse.model.Aluno;
+import br.com.projetosigse.model.StatusChamada;
+import br.com.projetosigse.repository.AlunoResponsavelRepository;
 import br.com.projetosigse.repository.AlunoRepository;
+import br.com.projetosigse.repository.CartaoRfidRepository;
+import br.com.projetosigse.repository.ChamadaPatioRepository;
+import br.com.projetosigse.repository.EventoAcessoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -16,10 +25,31 @@ public class AlunoService {
 
     private final AlunoRepository alunoRepository;
     private final TurmaService turmaService;
+    private final CartaoRfidRepository cartaoRfidRepository;
+    private final AlunoResponsavelRepository alunoResponsavelRepository;
+    private final ChamadaPatioRepository chamadaPatioRepository;
+    private final EventoAcessoRepository eventoAcessoRepository;
+    private final PatioNotificador patioNotificador;
+    private final FotoStorageService fotoStorageService;
 
-    public AlunoService(AlunoRepository alunoRepository, TurmaService turmaService) {
+    public AlunoService(
+            AlunoRepository alunoRepository,
+            TurmaService turmaService,
+            CartaoRfidRepository cartaoRfidRepository,
+            AlunoResponsavelRepository alunoResponsavelRepository,
+            ChamadaPatioRepository chamadaPatioRepository,
+            EventoAcessoRepository eventoAcessoRepository,
+            PatioNotificador patioNotificador,
+            FotoStorageService fotoStorageService
+    ) {
         this.alunoRepository = alunoRepository;
         this.turmaService = turmaService;
+        this.cartaoRfidRepository = cartaoRfidRepository;
+        this.alunoResponsavelRepository = alunoResponsavelRepository;
+        this.chamadaPatioRepository = chamadaPatioRepository;
+        this.eventoAcessoRepository = eventoAcessoRepository;
+        this.patioNotificador = patioNotificador;
+        this.fotoStorageService = fotoStorageService;
     }
 
     @Transactional
@@ -31,14 +61,19 @@ public class AlunoService {
 
     @Transactional(readOnly = true)
     public List<AlunoResponse> listar() {
-        List<Aluno> alunos;
-        alunos = alunoRepository.findAll();
-        return alunos.stream().map(AlunoResponse::from).toList();
+        return alunoRepository.findByAtivoTrue().stream().map(AlunoResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AlunoResponse> listarInativos() {
+        return alunoRepository.findByAtivoFalse().stream().map(AlunoResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
     public AlunoResponse buscar(Long id) {
-        return AlunoResponse.from(obter(id));
+        Aluno aluno = alunoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Aluno ativo não encontrado: " + id));
+        return AlunoResponse.from(aluno);
     }
 
     @Transactional
@@ -48,14 +83,57 @@ public class AlunoService {
         return AlunoResponse.from(alunoRepository.save(aluno));
     }
 
+    @Transactional
+    public AlunoResponse ativar(Long id) {
+        Aluno aluno = obter(id);
+        aluno.setAtivo(true);
+        return AlunoResponse.from(alunoRepository.save(aluno));
+    }
+
+    @Transactional
+    public AlunoResponse receberFoto(Long id, MultipartFile foto) {
+        Aluno aluno = obter(id);
+        aluno.setFotoUrl(fotoStorageService.salvar(foto));
+        return AlunoResponse.from(alunoRepository.save(aluno));
+    }
+
+    @Transactional
+    public void desativar(Long id) {
+        Aluno aluno = obter(id);
+        aluno.setAtivo(false);
+        alunoRepository.save(aluno);
+    }
+
+    @Transactional
+    public void excluirPermanentemente(Long id) {
+        Aluno aluno = obter(id);
+        List<PatioEvento> eventosRemocao = chamadaPatioRepository.findByAlunoId(id).stream()
+                .filter(chamada -> chamada.getStatus() == StatusChamada.AGUARDANDO)
+                .map(PatioEvento::remover)
+                .toList();
+        chamadaPatioRepository.deleteByAlunoId(id);
+        eventoAcessoRepository.deleteByAlunoId(id);
+        cartaoRfidRepository.deleteByAlunoId(id);
+        alunoResponsavelRepository.deleteByAlunoId(id);
+        alunoRepository.delete(aluno);
+        if (!eventosRemocao.isEmpty()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    eventosRemocao.forEach(patioNotificador::publicar);
+                }
+            });
+        }
+    }
+
     public Aluno obter(Long id) {
         return alunoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Aluno não encontrado: " + id));
     }
 
     public Aluno obterPorMatricula(String matricula) {
-        return alunoRepository.findByMatricula(matricula)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Aluno não encontrado para matrícula: " + matricula));
+        return alunoRepository.findByMatriculaAndAtivoTrue(matricula)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Aluno ativo não encontrado para matrícula: " + matricula));
     }
 
     private void aplicar(Aluno aluno, AlunoRequest request) {
